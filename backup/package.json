@@ -1,0 +1,21 @@
+{
+  "name": "wikijs-backup",
+  "version": "1.0.0",
+  "description": "Daily PostgreSQL backup for the Closet Republic Wiki.js, with email alerts on failure",
+  "private": true,
+  "type": "module",
+  "main": "src/backup.js",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "backup": "node src/backup.js",
+    "dry-run": "node src/backup.js --dry-run",
+    "test-failure": "node src/backup.js --test-failure",
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "nodemailer": "^6.9.16"
+  },
+  "devDependencies": {
+    "smtp-server": "^3.13.6"
+  }
+}

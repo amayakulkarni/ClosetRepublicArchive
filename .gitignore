@@ -1,0 +1,15 @@
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Database dumps
+backups/
+*.dump
+*.dump.partial
+*.dump.sha256
+*.sql
+*.sql.gz
+
+# Node
+backup/node_modules/

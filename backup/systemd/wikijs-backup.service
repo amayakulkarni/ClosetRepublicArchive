@@ -1,0 +1,16 @@
+[Unit]
+Description=Wiki.js PostgreSQL backup
+Wants=docker.service
+After=docker.service network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/wikijs/backup
+ExecStart=/usr/bin/node /opt/wikijs/backup/src/backup.js --env /opt/wikijs/.env
+# Backup files are private to root.
+UMask=0077
+Nice=10
+IOSchedulingClass=idle
+NoNewPrivileges=true
+ProtectHome=true
+PrivateTmp=true

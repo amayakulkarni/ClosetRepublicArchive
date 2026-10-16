@@ -1,0 +1,88 @@
+# Wiki.js 2 + PostgreSQL 16 for wiki.closetrepublic.com
+#
+# Location on the server: /opt/wikijs/docker-compose.yml
+# Settings come from /opt/wikijs/.env (copy .env.example and fill it in).
+# Each service receives only the variables it needs; SMTP and backup
+# settings in .env are never passed into the containers.
+#
+# Wiki.js is published on 127.0.0.1:40010 only. nginx on the host proxies
+# https://wiki.closetrepublic.com to it. Postgres is not published at all.
+
+name: wikijs
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: wikijs-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:?DB_NAME must be set in .env}
+      POSTGRES_USER: ${DB_USER:?DB_USER must be set in .env}
+      POSTGRES_PASSWORD: ${DB_PASS:?DB_PASS must be set in .env}
+      # UTF-8 encoding with ICU Unicode collation. Only applied when the
+      # data volume is created for the first time.
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale-provider=icu --icu-locale=und --locale=C.UTF-8"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - wiki-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\" -h 127.0.0.1"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+    shm_size: 256mb
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  wikijs:
+    image: ghcr.io/requarks/wiki:2
+    container_name: wikijs-app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+        restart: true
+    environment:
+      DB_TYPE: ${DB_TYPE:-postgres}
+      DB_HOST: ${DB_HOST:-db}
+      DB_PORT: ${DB_PORT:-5432}
+      DB_NAME: ${DB_NAME:?DB_NAME must be set in .env}
+      DB_USER: ${DB_USER:?DB_USER must be set in .env}
+      DB_PASS: ${DB_PASS:?DB_PASS must be set in .env}
+      DB_SSL: "false"
+    ports:
+      # host 127.0.0.1:40010 -> container port 3000 (Wiki.js default)
+      - "127.0.0.1:${WIKI_PORT:-40010}:3000"
+    networks:
+      - wiki-net
+    healthcheck:
+      # /healthz exists once setup is finished; "/" answers during the
+      # first-run onboarding wizard.
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:3000/healthz || curl -fsS -o /dev/null http://127.0.0.1:3000/ || wget -q -O /dev/null http://127.0.0.1:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+networks:
+  wiki-net:
+    driver: bridge
+    name: wiki-net
+
+volumes:
+  db-data:
+    name: wikijs-db-data
