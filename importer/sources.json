@@ -1,0 +1,43 @@
+{
+  "_readme": "Allow-list of sources. See importer/README.md, section 'sources.json'. Only openly licensed MediaWiki sites; the licence is re-checked live on every run.",
+  "sources": [
+    {
+      "id": "wikipedia-en",
+      "name": "English Wikipedia",
+      "type": "mediawiki",
+      "enabled": true,
+      "api": "https://en.wikipedia.org/w/api.php",
+      "apiAllowedBy": "https://www.mediawiki.org/wiki/Wikimedia_APIs/Access_policy",
+      "allowedLicences": ["CC BY-SA 4.0"],
+      "defaultTags": [],
+      "skipCategories": [],
+      "pages": [
+        { "title": "LGBTQ rights in India", "tags": ["type-law", "region-india", "topic-legal-rights"], "target": "law/india/lgbtq-rights-in-india" },
+        { "title": "Transgender Persons (Protection of Rights) Act, 2019", "tags": ["type-law", "region-india", "topic-documents", "topic-legal-rights"], "target": "law/india/transgender-persons-act-2019" },
+        { "title": "Navtej Singh Johar v. Union of India", "tags": ["type-law", "region-india", "topic-legal-rights"], "target": "law/india/navtej-singh-johar-2018" },
+        { "title": "National Legal Services Authority v. Union of India", "tags": ["type-law", "region-india", "topic-documents"], "target": "law/india/nalsa-2014" },
+        { "title": "Supriyo v. Union of India", "tags": ["type-law", "region-india", "topic-relationships"], "target": "law/india/supriyo-2023" },
+        { "title": "Hijra (South Asia)", "tags": ["type-explainer", "region-india", "topic-culture", "topic-history"], "target": "history/hijra" },
+        { "title": "Recognition of same-sex unions in India", "tags": ["type-law", "region-india", "topic-relationships"], "target": "law/india/same-sex-unions" }
+      ]
+    },
+    {
+      "id": "lgbta-miraheze",
+      "name": "LGBTA Wiki (Miraheze)",
+      "type": "mediawiki",
+      "enabled": true,
+      "api": "https://lgbta.miraheze.org/w/api.php",
+      "allowedLicences": [],
+      "defaultTags": ["type-glossary", "region-global", "topic-identity"],
+      "targetPrefix": "glossary",
+      "skipCategories": [],
+      "pages": [
+        { "title": "Non-Binary", "tags": [] },
+        { "title": "Asexual", "tags": [] },
+        { "title": "Bisexual", "tags": [] },
+        { "title": "Transgender", "tags": [] }
+      ],
+      "categories": []
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+[Unit]
+Description=Run the Wiki.js content importer weekly
+
+[Timer]
+# Sundays 04:30 server time, after the 03:30 backup, with a random delay of up to 30 minutes
+OnCalendar=Sun *-*-* 04:30:00
+RandomizedDelaySec=1800
+Persistent=true
+Unit=wikijs-importer.service
+
+[Install]
+WantedBy=timers.target

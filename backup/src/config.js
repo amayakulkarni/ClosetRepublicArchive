@@ -50,7 +50,7 @@ export function buildConfig(env) {
   };
 
   const config = {
-    backupDir: env.BACKUP_DIR || '/opt/wikijs/backups',
+    backupDir: env.BACKUP_DIR || '/opt/ClosetRepublicArchive/backups',
     retentionDays: int(env.BACKUP_RETENTION_DAYS, 14),
     minKeep: int(env.BACKUP_MIN_KEEP, 3),
     container: env.BACKUP_DB_CONTAINER || 'wikijs-db',

@@ -5,8 +5,8 @@ After=docker.service network-online.target
 
 [Service]
 Type=oneshot
-WorkingDirectory=/opt/wikijs/backup
-ExecStart=/usr/bin/node /opt/wikijs/backup/src/backup.js --env /opt/wikijs/.env
+WorkingDirectory=/opt/ClosetRepublicArchive/backup
+ExecStart=/usr/bin/node /opt/ClosetRepublicArchive/backup/src/backup.js --env /opt/ClosetRepublicArchive/.env
 # Backup files are private to root.
 UMask=0077
 Nice=10

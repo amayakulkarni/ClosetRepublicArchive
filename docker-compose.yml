@@ -1,7 +1,7 @@
 # Wiki.js 2 + PostgreSQL 16 for wiki.closetrepublic.com
 #
-# Location on the server: /opt/wikijs/docker-compose.yml
-# Settings come from /opt/wikijs/.env (copy .env.example and fill it in).
+# Location on the server: /opt/ClosetRepublicArchive/docker-compose.yml
+# Settings come from /opt/ClosetRepublicArchive/.env (copy .env.example and fill it in).
 # Each service receives only the variables it needs; SMTP and backup
 # settings in .env are never passed into the containers.
 #

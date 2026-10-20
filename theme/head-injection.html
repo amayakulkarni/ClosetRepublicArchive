@@ -1,0 +1,21 @@
+<!-- Closet Republic theme: paste into Administration > Theme > Code Injection > Head HTML Injection -->
+<meta name="color-scheme" content="only dark">
+<meta name="theme-color" content="#000000">
+<script>
+  // Apply nature mode before the first paint: ?nature= in the address, then the saved
+  // choice (cookie cr_nature), otherwise on. Same behaviour as closetrepublic.com.
+  (function () {
+    var on = true;
+    try {
+      var m = document.cookie.match(/(?:^|; )cr_nature=([01])/);
+      if (m) { on = m[1] === '1'; }
+      var q = new URLSearchParams(window.location.search);
+      ['nature', 'paradoy', 'parody'].forEach(function (n) {
+        var v = (q.get(n) || '').toLowerCase();
+        if (['true', '1', 'on', 'yes'].indexOf(v) !== -1) { on = true; }
+        if (['false', '0', 'off', 'no'].indexOf(v) !== -1) { on = false; }
+      });
+    } catch (e) { /* defaults to on */ }
+    document.documentElement.setAttribute('data-nature', on ? 'on' : 'off');
+  }());
+</script>

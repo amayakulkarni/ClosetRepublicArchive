@@ -1,7 +1,12 @@
-# Secrets
+# Secrets (any folder): .env, .env.local, .env.production and so on; only templates are kept
 .env
 .env.*
+**/.env
+**/.env.*
+*.local
 !.env.example
+!**/.env.example
+!**/.env.local.example
 
 # Database dumps
 backups/
@@ -13,3 +18,44 @@ backups/
 
 # Node
 backup/node_modules/
+**/node_modules/
+
+# Importer state and run reports (source titles, revision ids)
+importer/data/
+
+# Third-party content: never commit downloaded or imported material.
+# Licences, attribution and privacy checks happen in Wiki.js review, not in git.
+dumps/
+downloads/
+imports/
+cache/
+.cache/
+tmp/
+*.zim
+*.xml
+*.xml.gz
+*.xml.bz2
+*.xml.7z
+*.warc
+*.warc.gz
+*.har
+*.mhtml
+*.webarchive
+*.pdf
+*.epub
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.7z
+*.rar
+
+# Uploads and media pulled from other sites (add own artwork deliberately with git add -f)
+uploads/
+media/
+
+# Logs and editor leftovers
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db

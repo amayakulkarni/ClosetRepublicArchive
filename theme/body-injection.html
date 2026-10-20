@@ -1,0 +1,188 @@
+<!-- Closet Republic theme: paste into Administration > Theme > Code Injection > Body HTML Injection -->
+<div class="cr-prism-layers" aria-hidden="true">
+  <div class="cr-prism cr-prism--top"></div>
+  <div class="cr-prism cr-prism--bottom"></div>
+  <div class="cr-prism-cursor" data-active="false"></div>
+</div>
+
+<button type="button" role="switch" aria-checked="true" class="cr-nature-toggle" id="cr-nature-toggle" data-no-swipe title="Toggle nature mode (or swipe sideways)">
+  <span class="cr-nature-toggle__track" aria-hidden="true"><span class="cr-nature-toggle__thumb"></span></span>
+  <span class="cr-nature-toggle__label">Nature</span>
+</button>
+<p class="cr-sr-only" id="cr-visual-mode-description"></p>
+<div class="cr-sr-only" role="status" aria-live="polite" id="cr-announce"></div>
+
+<script>
+(function () {
+  if (window.__crWikiTheme) { return; }
+  window.__crWikiTheme = true;
+
+  var SITE = 'https://closetrepublic.com';
+  // Where readers report possibly wrong information (shown in the footer).
+  var REPORT_EMAIL = 'corrections@closetrepublic.com';
+  var COOKIE = 'cr_nature';
+  var QUERY_NAMES = ['nature', 'paradoy', 'parody'];
+  var PRISM_DESCRIPTION = 'Nature mode is on. The page looks as if it is seen through a curved prism: near the top and bottom of the screen, and in a circle around the pointer, white softly melts into pastel rainbow colours and other colours take on a gentle tint of their own spectrum. Content in the middle of the screen is not distorted.';
+  var MONO_DESCRIPTION = 'Nature mode is off. The page is shown in plain monochrome black and white.';
+  var THEME_NOTICE = 'CR looks best as is and developers have made huge efforts to make their artwork accessible to everyone. Please disable forced theme (light/dark) to taste the art as it was meant to.';
+
+  var html = document.documentElement;
+  var toggleBtn = document.getElementById('cr-nature-toggle');
+  var cursor = document.querySelector('.cr-prism-cursor');
+
+  function isOn() { return html.getAttribute('data-nature') !== 'off'; }
+
+  // ---------------------------------------------------------- nature mode
+  function render() {
+    var on = isOn();
+    if (toggleBtn) { toggleBtn.setAttribute('aria-checked', on ? 'true' : 'false'); }
+    var d = document.getElementById('cr-visual-mode-description');
+    if (d) { d.textContent = on ? PRISM_DESCRIPTION : MONO_DESCRIPTION; }
+    if (!on && cursor) { cursor.setAttribute('data-active', 'false'); }
+  }
+
+  function setNature(next) {
+    html.setAttribute('data-nature', next ? 'on' : 'off');
+    try {
+      document.cookie = COOKIE + '=' + (next ? 1 : 0) + '; path=/; max-age=31536000; samesite=lax';
+    } catch (e) { /* cookies blocked: the choice lasts for this page only */ }
+    var url = new URL(window.location.href);
+    if (QUERY_NAMES.some(function (n) { return url.searchParams.has(n); })) {
+      QUERY_NAMES.forEach(function (n) { url.searchParams.delete(n); });
+      window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash);
+    }
+    render();
+    var a = document.getElementById('cr-announce');
+    if (a) { a.textContent = next ? PRISM_DESCRIPTION : MONO_DESCRIPTION; }
+  }
+  function toggle() { setNature(!isOn()); }
+
+  if (toggleBtn) { toggleBtn.addEventListener('click', toggle); }
+
+  // ---------------------------------------------------------- prism pointer circle
+  var frame = 0, px = 0, py = 0;
+  function paint() {
+    frame = 0;
+    if (cursor) { cursor.style.transform = 'translate3d(' + px + 'px,' + py + 'px,0)'; }
+  }
+  function onPointer(e) {
+    if (!cursor || !isOn()) { return; }
+    px = e.clientX; py = e.clientY;
+    cursor.setAttribute('data-active', 'true');
+    if (!frame) { frame = requestAnimationFrame(paint); }
+  }
+  function hideCursor() { if (cursor) { cursor.setAttribute('data-active', 'false'); } }
+  window.addEventListener('pointermove', onPointer, { passive: true });
+  window.addEventListener('pointerdown', onPointer, { passive: true });
+  window.addEventListener('pointerup', function (e) { if (e.pointerType === 'touch') { hideCursor(); } }, { passive: true });
+  html.addEventListener('pointerleave', hideCursor);
+  window.addEventListener('blur', hideCursor);
+
+  // ---------------------------------------------------------- swipe to toggle
+  var start = null;
+  function ignoreSwipe(target) {
+    if (!(target instanceof Element)) { return false; }
+    if (target.closest('input, textarea, select, [contenteditable], [data-no-swipe], .CodeMirror, .v-dialog, .v-menu__content, .v-navigation-drawer, .v-data-table, table, pre')) { return true; }
+    for (var el = target; el && el !== document.body; el = el.parentElement) {
+      if (el.scrollWidth > el.clientWidth + 2 && getComputedStyle(el).overflowX !== 'visible') { return true; }
+    }
+    return false;
+  }
+  window.addEventListener('touchstart', function (e) {
+    if (e.touches.length !== 1 || ignoreSwipe(e.target)) { start = null; return; }
+    start = { x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now() };
+  }, { passive: true });
+  window.addEventListener('touchend', function (e) {
+    if (!start) { return; }
+    var t = e.changedTouches[0];
+    var dx = t.clientX - start.x, dy = t.clientY - start.y;
+    if (Math.abs(dx) >= 90 && Math.abs(dy) <= 60 && Date.now() - start.t <= 700) { toggle(); }
+    start = null;
+  }, { passive: true });
+
+  // ---------------------------------------------------------- footer
+  // Wiki.js is a single-page app that renders its own footer, so the Closet Republic
+  // footer is inserted above it whenever it appears (and put back if the app removes it).
+  function footerHtml() {
+    return '<div class="cr-footer__inner">' +
+      '<div class="cr-footer__brand">' +
+        '<svg class="cr-mark" viewBox="0 0 160 160" width="28" height="28" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="10"><path d="M138.38,150H21.62c-6.42,0-11.62-5.2-11.62-11.62V21.62c0-6.42,5.2-11.62,11.62-11.62h116.75c6.42,0,11.62,5.2,11.62,11.62v116.75c0,6.42-5.2,11.62-11.62,11.62Z"/><path d="M80,10c.25,18.19-.25,121.3,0,140"/><path d="M93.9,68.63c0,7.08.51,15.67.51,26.28"/><path d="M66.1,68.63v26.28"/></g></svg>' +
+        '<span>Closet Republic Wiki · Naturally exceptional</span>' +
+      '</div>' +
+      '<nav aria-label="Closet Republic site"><ul>' +
+        '<li><a href="' + SITE + '/about">About</a></li>' +
+        '<li><a href="' + SITE + '/gazette">Gazette</a></li>' +
+        '<li><a href="' + SITE + '/constitution">Constitution</a></li>' +
+        '<li><a href="' + SITE + '/development">Contribute</a></li>' +
+        '<li><a href="https://github.com/amayakulkarni/ClosetRepublic" target="_blank" rel="noopener noreferrer">GitHub<span class="cr-sr-only"> (opens in a new tab)</span></a></li>' +
+      '</ul></nav>' +
+      '<nav aria-label="Legal"><ul>' +
+        '<li><a href="' + SITE + '/guidelines">Community Guidelines</a></li>' +
+        '<li><a href="' + SITE + '/terms">Terms</a></li>' +
+        '<li><a href="' + SITE + '/privacy">Privacy</a></li>' +
+      '</ul></nav>' +
+      '<div class="cr-footer__report" role="note">' +
+        '<p><strong>Check before relying on it.</strong> Wiki pages are written and fact-checked by volunteers and may contain mistakes or be out of date. They are not legal, medical or professional advice.</p>' +
+        '<p>Spotted something that may be wrong? Email <a href="mailto:' + REPORT_EMAIL + '?subject=Wiki%20correction%3A%20' + encodeURIComponent(location.pathname) + '">' + REPORT_EMAIL + '</a> with the page address. Safety or privacy problems are handled first.</p>' +
+      '</div>' +
+      '<p class="cr-footer__small">Closet Republic is a parody micronation and online community, not a state or registered charity. No trackers, no ads.</p>' +
+      '<p class="cr-footer__small">Swipe sideways or use the Nature switch to change modes. Add <code>?nature=true</code> or <code>?nature=false</code> to any link to share a mode.</p>' +
+      '<p class="cr-footer__small"><a href="https://amayakulkarni.com" target="_blank" rel="noopener noreferrer">Created by amaya@veronami<span class="cr-sr-only"> (opens amayakulkarni.com in a new tab)</span></a></p>' +
+    '</div>';
+  }
+  function ensureFooter() {
+    var native = document.querySelector('footer.v-footer');
+    if (!native || !native.parentNode) { return; }
+    if (native.previousElementSibling && native.previousElementSibling.classList.contains('cr-footer')) { return; }
+    var existing = document.querySelector('.cr-footer');
+    if (existing && existing.parentNode) { existing.parentNode.removeChild(existing); }
+    var f = document.createElement('footer');
+    f.className = 'cr-footer';
+    f.innerHTML = footerHtml();
+    native.parentNode.insertBefore(f, native);
+  }
+
+  // ---------------------------------------------------------- forced theme notice
+  // Closet Republic is dark only. If the browser or an extension forces its own colours,
+  // an in-page notice asks for it to be turned off (never a pop-up dialog).
+  var warned = false;
+  function warn() {
+    if (warned) { return; }
+    warned = true;
+    var n = document.createElement('div');
+    n.className = 'cr-theme-notice';
+    n.setAttribute('role', 'alert');
+    n.innerHTML = '<p></p><button type="button">Dismiss</button>';
+    n.querySelector('p').textContent = THEME_NOTICE;
+    n.querySelector('button').addEventListener('click', function () { n.remove(); });
+    document.body.appendChild(n);
+  }
+  function watchForcedTheme() {
+    var probe = document.createElement('div');
+    probe.setAttribute('aria-hidden', 'true');
+    probe.style.cssText = 'position:absolute;width:1px;height:1px;overflow:hidden;left:-9999px;background-color:rgb(0, 0, 0);color:rgb(255, 255, 255)';
+    document.body.appendChild(probe);
+    function check() {
+      if (window.matchMedia('(forced-colors: active)').matches) { return warn(); }
+      if (html.hasAttribute('data-darkreader-mode') || html.hasAttribute('data-darkreader-scheme') ||
+          document.querySelector('meta[name="darkreader"], style.darkreader, [data-nighteye], #nighteyedefaultcss')) { return warn(); }
+      var ps = getComputedStyle(probe);
+      if (ps.backgroundColor !== 'rgb(0, 0, 0)' || ps.color !== 'rgb(255, 255, 255)' ||
+          (html.style.filter && html.style.filter !== 'none')) { return warn(); }
+    }
+    check();
+    window.matchMedia('(forced-colors: active)').addEventListener('change', check);
+    var timer;
+    new MutationObserver(function () { clearTimeout(timer); timer = setTimeout(check, 150); })
+      .observe(html, { attributes: true, attributeFilter: ['style', 'class', 'data-darkreader-mode', 'data-darkreader-scheme'] });
+  }
+
+  // ---------------------------------------------------------- start
+  render();
+  watchForcedTheme();
+  ensureFooter();
+  var t2;
+  new MutationObserver(function () { clearTimeout(t2); t2 = setTimeout(ensureFooter, 100); })
+    .observe(document.body, { childList: true, subtree: true });
+}());
+</script>

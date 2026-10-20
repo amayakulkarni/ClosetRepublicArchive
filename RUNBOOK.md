@@ -37,25 +37,34 @@ All commands run as root on the server (hostname `veronami`, Debian 13).
    node --version      # 18 or newer
    ```
 
-## 2. Create the folder and copy the package
+## 2. Clone the repository
+
+The repository is https://github.com/amayakulkarni/ClosetRepublicArchive. Its folder name on every machine is `ClosetRepublicArchive`, the same as the repository.
 
 ```bash
-mkdir -p /opt/wikijs
-cd /opt/wikijs
+cd /opt
+git clone https://github.com/amayakulkarni/ClosetRepublicArchive.git
+cd /opt/ClosetRepublicArchive
 ```
 
-Copy the package contents (`docker-compose.yml`, `.env.example`, `.gitignore`, `RUNBOOK.md`, `nginx/`, `backup/`) into `/opt/wikijs`, for example from the dev machine:
+To update later: `cd /opt/ClosetRepublicArchive && git pull`. Secrets (`.env`, `importer/.env.local`), backups and `node_modules` are ignored by git and stay on the server.
+
+**Moving an existing install from `/opt/wikijs`.** The Compose project name (`wikijs`) and volume name (`wikijs-db-data`) are fixed in `docker-compose.yml`, so the database survives the move:
 
 ```bash
-scp -r F:/ClosetRepublicDev/wiki/* root@veronami:/opt/wikijs/
+cd /opt/wikijs && docker compose down
+cp /opt/wikijs/.env /opt/ClosetRepublicArchive/.env && chmod 600 /opt/ClosetRepublicArchive/.env
+mv /opt/wikijs/backups /opt/ClosetRepublicArchive/backups
+sed -i 's#/opt/wikijs#/opt/ClosetRepublicArchive#g' /opt/ClosetRepublicArchive/.env
+cd /opt/ClosetRepublicArchive && docker compose up -d
 ```
 
-Do not copy `backup/node_modules`; it is installed on the server in step 6.
+Then reinstall the systemd units from the new folder (sections 7 and 8) and run `systemctl daemon-reload`.
 
 ## 3. Create `.env`
 
 ```bash
-cd /opt/wikijs
+cd /opt/ClosetRepublicArchive
 cp .env.example .env
 chmod 600 .env
 ```
@@ -84,7 +93,7 @@ grep CHANGE_ME .env && echo "STILL HAS PLACEHOLDERS" || echo ok
 ## 4. Start the stack
 
 ```bash
-cd /opt/wikijs
+cd /opt/ClosetRepublicArchive
 docker compose config --quiet && echo "compose file valid"
 docker compose pull
 docker compose up -d
@@ -112,7 +121,7 @@ The HTTPS server block refuses to load until the certificate files exist, so ins
 1. Create the ACME webroot and install the bootstrap site:
    ```bash
    mkdir -p /var/www/certbot
-   cp /opt/wikijs/nginx/wiki-bootstrap.conf /etc/nginx/sites-available/wiki.conf
+   cp /opt/ClosetRepublicArchive/nginx/wiki-bootstrap.conf /etc/nginx/sites-available/wiki.conf
    ln -sf /etc/nginx/sites-available/wiki.conf /etc/nginx/sites-enabled/wiki.conf
    nginx -t && systemctl reload nginx
    ```
@@ -124,7 +133,7 @@ The HTTPS server block refuses to load until the certificate files exist, so ins
    ```
 3. Replace the bootstrap with the real site and reload:
    ```bash
-   cp /opt/wikijs/nginx/wiki.conf /etc/nginx/sites-available/wiki.conf
+   cp /opt/ClosetRepublicArchive/nginx/wiki.conf /etc/nginx/sites-available/wiki.conf
    nginx -t && systemctl reload nginx
    ```
 4. Make renewals reload nginx:
@@ -156,12 +165,12 @@ Complete this step promptly; whoever opens the page first creates the administra
 Install and test the backup app (full details in `backup/README.md`):
 
 ```bash
-cd /opt/wikijs/backup
+cd /opt/ClosetRepublicArchive/backup
 npm install --omit=dev
 node src/backup.js --dry-run
 node src/backup.js --test-failure     # an email must arrive at BACKUP_ALERT_EMAIL
 node src/backup.js                    # first real backup
-ls -lh /opt/wikijs/backups
+ls -lh /opt/ClosetRepublicArchive/backups
 
 cp systemd/wikijs-backup.service systemd/wikijs-backup.timer /etc/systemd/system/
 systemctl daemon-reload
@@ -169,11 +178,22 @@ systemctl enable --now wikijs-backup.timer
 systemctl list-timers wikijs-backup.timer
 ```
 
-Copy `/opt/wikijs/backups` to storage outside this server on a schedule; backups on the same disk do not survive loss of the server.
+Copy `/opt/ClosetRepublicArchive/backups` to storage outside this server on a schedule; backups on the same disk do not survive loss of the server.
 
 Wiki pages, users, settings and uploaded assets are all stored in the database, so the dump covers everything except `.env` and the nginx and certificate files. Keep a copy of `.env` in a password manager.
 
 ---
+
+## 8. Content, imports and fact-checking
+
+1. Set the wiki licence: Administration > General > Site Info > License: **CC BY-SA 4.0** (required for imported CC BY-SA text).
+2. Create the **Reviewers**, **Members** and **Importer** groups and the `drafts/` page rules from `content/IMPORT-POLICY.md`, section 2.
+3. Create the mailbox `corrections@closetrepublic.com` on the mail server. The wiki footer asks readers to report possible mistakes there.
+4. Re-paste `theme/body-injection.html` and `theme/css-override.css` into Theme > Code Injection (they now include the correction notice and draft styles), click Apply, hard-refresh.
+5. Optional: install the importer from `importer/README.md` and run `--check-sources`, then `--dry-run`, before the first real run.
+6. Review drafts at https://wiki.closetrepublic.com/en/drafts/review-queue using the checklist in `content/IMPORT-POLICY.md`, section 3.
+
+Source research and licences: `content/SOURCES.md`. Tags and paths: `content/TAGS.md`. Page templates: `theme/templates/`.
 
 ## Restore
 
@@ -181,19 +201,19 @@ Restores replace the current database contents. Take a fresh backup first if the
 
 1. Pick the dump and verify it:
    ```bash
-   cd /opt/wikijs/backups
+   cd /opt/ClosetRepublicArchive/backups
    ls -1 *.dump
    sha256sum -c wikijs-YYYYMMDDTHHMMSSZ.dump.sha256
    ```
 2. Stop the application (leave the database running):
    ```bash
-   cd /opt/wikijs
+   cd /opt/ClosetRepublicArchive
    docker compose stop wikijs
    ```
 3. Restore:
    ```bash
    docker exec -i wikijs-db sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" -h 127.0.0.1 --clean --if-exists --no-owner --exit-on-error' \
-     < /opt/wikijs/backups/wikijs-YYYYMMDDTHHMMSSZ.dump
+     < /opt/ClosetRepublicArchive/backups/wikijs-YYYYMMDDTHHMMSSZ.dump
    ```
 4. Start the application and check it:
    ```bash
@@ -209,7 +229,7 @@ Restores replace the current database contents. Take a fresh backup first if the
 The `:2` tag follows the 2.x releases.
 
 ```bash
-cd /opt/wikijs
+cd /opt/ClosetRepublicArchive
 node backup/src/backup.js                 # backup first
 docker compose pull
 docker compose up -d
@@ -229,7 +249,7 @@ docker compose logs --tail 50 wikijs
 systemctl list-timers wikijs-backup.timer         # next run scheduled
 journalctl -u wikijs-backup.service -n 50         # last backup result
 certbot certificates                              # expiry date
-df -h /opt/wikijs                                 # disk space
+df -h /opt/ClosetRepublicArchive                                 # disk space
 ```
 
 ## Stop and remove

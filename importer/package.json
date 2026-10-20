@@ -1,0 +1,19 @@
+{
+  "name": "wikijs-importer",
+  "version": "1.0.0",
+  "description": "Imports openly licensed pages into the Closet Republic Wiki.js as unpublished drafts for fact-checking",
+  "private": true,
+  "type": "module",
+  "main": "src/import.js",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "import": "node src/import.js",
+    "dry-run": "node src/import.js --dry-run",
+    "check-sources": "node src/import.js --check-sources",
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "robots-parser": "^3.0.1",
+    "sanitize-html": "^2.18.1"
+  }
+}
